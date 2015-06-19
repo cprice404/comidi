@@ -1,16 +1,10 @@
 ### Ring Middleware for HTTP Metrics
 
-The other marquee feature of the `trapperkeeper-metrics` library is a Ring
-middleware that will automatically track metrics for all of your HTTP routes.
-This can be used in conjunction with the
-[Trapperkeeper Status Service](https://github.com/puppetlabs/trapperkeeper-status)
+`comidi` contains a Ring middleware that can be used in concert with a `MetricRegistry`
+(from the [dropwizard Metrics library](https://dropwizard.github.io/metrics)) to
+automatically track metrics for all of your `comidi` routes.  This can be used in conjunction
+with the [Trapperkeeper Status Service](https://github.com/puppetlabs/trapperkeeper-status)
 to easily expose debugging / telemetry information via HTTP.
-
-(Note: to take advantage of the HTTP metrics, your HTTP routes must be defined
-using [`comidi`](https://github.com/puppetlabs/comidi).  If your current application
-uses compojure, it should be fairly trivial to port to `comidi` if you'd like to
-take advantage of the HTTP metrics.  However, the rest of the `trapperkeeper-metrics`
-library can be used without `comidi`.)
 
 Here's an example of how to use the Ring middleware:
 

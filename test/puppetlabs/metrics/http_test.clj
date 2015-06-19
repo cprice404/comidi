@@ -7,6 +7,10 @@
 
 (use-fixtures :once schema-test/validate-schemas)
 
+(deftest test-http-metric-name
+  (testing "http-metric-name should create a metric name"
+    (is (= "puppetlabs.localhost.http.foocount" (http-metric-name "localhost" "foocount")))))
+
 (deftest test-initialize-http-metrics!
   (testing "initialize-http-metrics! should create metrics for all specified HTTP endpoints"
     (let [routes        (comidi/routes

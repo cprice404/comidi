@@ -4,50 +4,51 @@
             [puppetlabs.comidi :as comidi]
             [puppetlabs.trapperkeeper.services.status.status-core :as status]
             [puppetlabs.metrics.http :as http-metrics]
-            [puppetlabs.metrics :as metrics])
+    ;[puppetlabs.metrics :as metrics]
+            )
   (:import (java.util.concurrent TimeUnit)))
 
 ;; TODO: it might be worth moving this example app out into its own repo at
 ;; some point, because eventually it will also demo our comidi->swagger
 ;; integration, etc.  Or we could put it into comidi itself, if we OSS this
 ;; metrics library.
-
-(defn rand-sleep
-  [min max]
-  (Thread/sleep (+ min (rand-int max))))
-
-(defn handle-foo
-  [req]
-  (log/info "Handling foo request")
-  (rand-sleep 5 10)
-  "foo!")
-
-(defn handle-bar
-  [bar]
-  (log/info "Handling bar request, params:" bar)
-  (rand-sleep 10 20)
-  "bar!")
-
-(defn baz-task1
-  [timer]
-  (metrics/time! timer
-    (rand-sleep 5 10)))
-
-(defn baz-task2
-  [timer]
-  (metrics/time! timer
-    (rand-sleep 20 50)))
-
-(defn handle-baz
-  [app-metrics baz bam]
-  (log/info "Handling baz request, params:" baz bam)
-  (baz-task1 (:baz-task1-timer app-metrics))
-  (if (= (rand-int 3) 0)
-    (baz-task2 (:baz-task2-timer app-metrics)))
-  "baz!")
-
-(defn example-routes
-  [path app-metrics]
+;
+;(defn rand-sleep
+;  [min max]
+;  (Thread/sleep (+ min (rand-int max))))
+;
+;(defn handle-foo
+;  [req]
+;  (log/info "Handling foo request")
+;  (rand-sleep 5 10)
+;  "foo!")
+;
+;(defn handle-bar
+;  [bar]
+;  (log/info "Handling bar request, params:" bar)
+;  (rand-sleep 10 20)
+;  "bar!")
+;
+;(defn baz-task1
+;  [timer]
+;  (metrics/time! timer
+;    (rand-sleep 5 10)))
+;
+;(defn baz-task2
+;  [timer]
+;  (metrics/time! timer
+;    (rand-sleep 20 50)))
+;
+;(defn handle-baz
+;  [app-metrics baz bam]
+;  (log/info "Handling baz request, params:" baz bam)
+;  (baz-task1 (:baz-task1-timer app-metrics))
+;  (if (= (rand-int 3) 0)
+;    (baz-task2 (:baz-task2-timer app-metrics)))
+;  "baz!")
+;
+;(defn example-routes
+;  [path app-metrics]
 
   ;; NOTE: the HTTP metrics are automatically built up from your comidi routes.
   ;; The example traffic generator is also dynamic based on these routes.

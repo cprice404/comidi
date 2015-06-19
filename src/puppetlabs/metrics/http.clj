@@ -3,8 +3,7 @@
 (ns puppetlabs.metrics.http
   (:import (java.util.concurrent TimeUnit)
            (com.codahale.metrics Timer Counter Histogram MetricRegistry))
-  (:require [puppetlabs.metrics :as metrics]
-            [schema.core :as schema]
+  (:require [schema.core :as schema]
             [puppetlabs.comidi :as comidi]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,6 +98,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Public
+
+(schema/defn ^:always-validate http-metric-name :- schema/Str
+  "Given a hostname and a metric name, build a qualified http metric name for use
+  with Metrics."
+  [hostname :- schema/Str
+   metric-name :- schema/Str]
+  (MetricRegistry/name "puppetlabs" (into-array String [hostname "http" metric-name])))
 
 (schema/defn ^:always-validate initialize-http-metrics! :- (schema/maybe HttpMetrics)
   "Initialize a MetricRegistry with metrics for a list of HTTP endpoints.  The

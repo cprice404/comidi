@@ -21,7 +21,10 @@
                  [compojure "1.3.3"]
                  [prismatic/schema "0.4.0"]
                  [puppetlabs/kitchensink ~ks-version]
-                 [puppetlabs/trapperkeeper-metrics "0.1.1-SNAPSHOT"]]
+
+                 [io.dropwizard.metrics/metrics-core "3.1.2"]
+                 ;[puppetlabs/trapperkeeper-metrics "0.1.1-SNAPSHOT"]
+                 ]
 
   :deploy-repositories [["releases" {:url "https://clojars.org/repo"
                                      :username :env/clojars_jenkins_username

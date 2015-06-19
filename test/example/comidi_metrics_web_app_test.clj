@@ -26,7 +26,7 @@
     :body
     json/parse-string))
 
-(deftest test-example-web-service
+#_(deftest test-example-web-service
   (logutils/with-test-logging
     (with-app-with-config app
       (get-services-from-bootstrap)
