@@ -23,6 +23,8 @@
 
 (defmacro let-request
   [[route-meta req] & body]
+  ;; TODO: add support for other bindings besides query params
+  ;; TODO: type coercion?
   (let [req-bindings (get-qp-req-bindings route-meta req)]
     #_(println "req bindings:" req-bindings)
     `(let [~@req-bindings]
@@ -41,9 +43,7 @@
   "Helper function, used by the compojure-like macros (GET/POST/etc.) to generate
   a bidi route that includes a wrapped handler function."
   [method pattern specs body]
-  `[~pattern {~method (handler-fn* ~specs ~body)}])
-
-
+  `(with-meta [~pattern {~method (handler-fn* ~specs ~body)}] ~specs))
 
 (defmacro GET
   [pattern specs & body]
