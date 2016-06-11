@@ -10,20 +10,38 @@
 (def #^{:doc "TODO"}
   context #'comidi/context)
 
+(defn qp-binding [req sym]
+  `(get-in ~req [:query-params ~(keyword sym)]
+           (get-in ~req [:query-params ~(name sym)])))
+
+(defn get-qp-req-bindings
+  [route-meta req]
+  (mapcat (fn [kw]
+            (let [sym (symbol (name kw))]
+              [sym (qp-binding req sym)]))
+          (:query-params route-meta)))
+
+(defmacro let-request
+  [[route-meta req] & body]
+  (let [req-bindings (get-qp-req-bindings route-meta req)]
+    #_(println "req bindings:" req-bindings)
+    `(let [~@req-bindings]
+       ~@body)))
+
 (defmacro handler-fn*
   "Helper macro, used by the compojure-like macros (GET/POST/etc.) to generate
   a function that provides compojure's destructuring and rendering support."
-  [bindings body]
+  [specs body]
   `(fn [request#]
      (compojure-response/render
-      (compojure/let-request [~bindings request#] ~@body)
+      (let-request [~specs request#] ~@body)
       request#)))
 
 (defn route-with-method*
   "Helper function, used by the compojure-like macros (GET/POST/etc.) to generate
   a bidi route that includes a wrapped handler function."
   [method pattern specs body]
-  `[~pattern {~method (handler-fn* ~(:bindings specs) ~body)}])
+  `[~pattern {~method (handler-fn* ~specs ~body)}])
 
 
 
