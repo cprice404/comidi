@@ -1,7 +1,8 @@
 (ns puppetlabs.comidi.spec
   (:require [puppetlabs.comidi :as comidi]
             [compojure.response :as compojure-response]
-            [compojure.core :as compojure]))
+            [compojure.core :as compojure]
+            [clojure.string :as str]))
 
 
 (def #^{:doc "TODO"}
@@ -48,3 +49,36 @@
 (defmacro GET
   [pattern specs & body]
   (route-with-method* :get pattern specs body))
+
+(defn route-meta->swagger-path
+  [method route-meta]
+  {method {:responses {200 {:schema (:return route-meta)
+                            :description ""}}}})
+
+(defn swagger-paths
+  [routes]
+  (let [paths (comidi/walk-route-tree
+               routes {}
+               (fn [acc route-node route-info method route-handler]
+                 (println "VISITOR CALLED")
+                 (println "\tROUTE NODE:" route-node)
+                 (println "\tROUTE META:" (meta route-node))
+                 (println "\tROUTE INFO:" route-info)
+                 (println "\tMETHOD:" method)
+                 (println "\tROUTE HANDLER:" route-handler)
+                 (let [route-meta (meta route-node)]
+                   (assoc acc (str/join (:path route-info))
+                              (route-meta->swagger-path
+                               method route-meta)
+
+                              #_{:tags nil
+                               :summary nil
+                               :description nil
+                               :parameters nil
+                               :responses nil
+                               :produces nil
+                               :consumes nil
+                               :deprecated nil}))))]
+    (println "PATHS:")
+    (prn paths)
+    paths))
