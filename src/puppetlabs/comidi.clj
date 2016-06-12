@@ -245,7 +245,12 @@
         (-> route-meta
             (update-in [:routes] conj route-info)
             (assoc-in [:handlers matched] route-info)))
-      (visitor-fn acc route-info pattern matched))))
+      (do
+        (println "CALLING VISITOR, NODE:" (zip/node loc))
+        (println "\tVISITOR UP:" (-> loc zip/up zip/up zip/node))
+        (println "\tVISITOR UP META:" (-> loc zip/up zip/up zip/node meta))
+        (let [route-node (-> loc zip/up zip/up zip/node)]
+          (visitor-fn acc route-node route-info pattern matched))))))
 
 #_(schema/defn ^:always-validate
   breadth-route-metadata* :- RouteMetadata
@@ -298,12 +303,12 @@
         loc (-> [routes] zip/vector-zip zip/down)]
     (breadth-route-metadata* {:routes   []
                               :handlers {}} route-info loc))
-  (let [visitor-fn (fn [route-meta route-info pattern matched]
-                     (let [route-info (-> (update-route-info* route-info pattern)
+  (let [visitor-fn (fn [route-meta route-node route-info method route-handler]
+                     (let [route-info (-> (update-route-info* route-info method)
                                           add-route-name)]
                        (-> route-meta
                            (update-in [:routes] conj route-info)
-                           (assoc-in [:handlers matched] route-info))))]
+                           (assoc-in [:handlers route-handler] route-info))))]
     (walk-route-tree routes {:routes []
                              :handlers {}}
                      visitor-fn)))
