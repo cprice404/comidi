@@ -10,7 +10,8 @@
             [schema.core :as schema]
             [puppetlabs.kitchensink.core :as ks]
             [clojure.string :as str])
-  (:import (java.util.regex Pattern)))
+  (:import (java.util.regex Pattern)
+           (clojure.lang IFn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Schemas
@@ -176,9 +177,9 @@
     :else
     (update-in route-info [:path] conj pattern)))
 
-(declare breadth-route-metadata*)
+#_(declare breadth-route-metadata*)
 
-(schema/defn ^:always-validate
+#_(schema/defn ^:always-validate
   depth-route-metadata* :- RouteMetadata
   "Helper function used to traverse branches of the Bidi route tree, depth-first."
   [route-meta :- RouteMetadata
@@ -205,7 +206,48 @@
             (update-in [:routes] conj route-info)
             (assoc-in [:handlers matched] route-info))))))
 
+(declare walk-routes-breadth*)
+
 (schema/defn ^:always-validate
+  walk-routes-depth*
+  "Helper function used to traverse branches of the Bidi route tree, depth-first."
+  [acc
+   visitor-fn :- IFn
+   route-info :- RouteInfo
+   loc :- Zipper]
+  (let [[pattern matched] (zip/node loc)]
+    (cond
+      (map? matched)
+      #_(depth-route-metadata*
+       route-meta
+       route-info
+       (-> loc zip/down zip/right (zip/edit #(into [] %)) zip/up))
+      (walk-routes-depth*
+       acc
+       visitor-fn
+       route-info
+       (-> loc zip/down zip/right (zip/edit #(into [] %)) zip/up))
+
+      (vector? matched)
+      #_(breadth-route-metadata*
+       route-meta
+       (update-route-info* route-info pattern)
+       (-> loc zip/down zip/right zip/down))
+      (walk-routes-breadth*
+       acc
+       visitor-fn
+       (update-route-info* route-info pattern)
+       (-> loc zip/down zip/right zip/down))
+
+      :else
+      #_(let [route-info (-> (update-route-info* route-info pattern)
+                           add-route-name)]
+        (-> route-meta
+            (update-in [:routes] conj route-info)
+            (assoc-in [:handlers matched] route-info)))
+      (visitor-fn acc route-info pattern matched))))
+
+#_(schema/defn ^:always-validate
   breadth-route-metadata* :- RouteMetadata
   "Helper function used to traverse branches of the Bidi route tree, breadth-first."
   [route-meta :- RouteMetadata
@@ -219,16 +261,52 @@
         routes))))
 
 (schema/defn ^:always-validate
+  walk-routes-breadth*
+  "Helper function used to traverse branches of the Bidi route tree, breadth-first."
+  [acc
+   visitor-fn :- IFn
+   route-info :- RouteInfo
+   loc :- Zipper]
+  (loop [acc acc
+         loc loc]
+    (let [routes #_(depth-route-metadata* acc route-info loc)
+          (walk-routes-depth* acc visitor-fn route-info loc)]
+      (if-let [next (zip/right loc)]
+        (recur routes next)
+        routes))))
+
+(schema/defn ^:always-validate
+  walk-route-tree
+  "TODO"
+  [routes :- bidi-schema/RoutePair
+   acc
+   visitor-fn :- IFn]
+  (let [route-info {:path           []
+                    :request-method :any}
+        loc (-> [routes] zip/vector-zip zip/down)]
+    #_(breadth-route-metadata* acc route-info loc)
+    (walk-routes-breadth* acc visitor-fn route-info loc)))
+
+(schema/defn ^:always-validate
   route-metadata* :- RouteMetadata
   "Traverses a Bidi route tree and returns route metadata, which includes a list
   of RouteInfo objects (one per route), plus a mechanism to look up the
   RouteInfo for a given handler."
   [routes :- bidi-schema/RoutePair]
-  (let [route-info {:path           []
+  #_(let [route-info {:path           []
                     :request-method :any}
         loc (-> [routes] zip/vector-zip zip/down)]
     (breadth-route-metadata* {:routes   []
-                              :handlers {}} route-info loc)))
+                              :handlers {}} route-info loc))
+  (let [visitor-fn (fn [route-meta route-info pattern matched]
+                     (let [route-info (-> (update-route-info* route-info pattern)
+                                          add-route-name)]
+                       (-> route-meta
+                           (update-in [:routes] conj route-info)
+                           (assoc-in [:handlers matched] route-info))))]
+    (walk-route-tree routes {:routes []
+                             :handlers {}}
+                     visitor-fn)))
 
 (def memoized-route-metadata*
   (memoize route-metadata*))
