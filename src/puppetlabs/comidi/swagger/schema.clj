@@ -1,4 +1,4 @@
-(ns puppetlabs.comidi.schema
+(ns puppetlabs.comidi.swagger.schema
   (:require [puppetlabs.comidi :as comidi]
             [compojure.response :as compojure-response]
             [compojure.core :as compojure]
@@ -57,28 +57,10 @@
 
 (defn swagger-paths
   [routes]
-  (let [paths (comidi/walk-route-tree
-               routes {}
-               (fn [acc route-node route-info method route-handler]
-                 (println "VISITOR CALLED")
-                 (println "\tROUTE NODE:" route-node)
-                 (println "\tROUTE META:" (meta route-node))
-                 (println "\tROUTE INFO:" route-info)
-                 (println "\tMETHOD:" method)
-                 (println "\tROUTE HANDLER:" route-handler)
-                 (let [route-meta (meta route-node)]
-                   (assoc acc (str/join (:path route-info))
-                              (route-meta->swagger-path
-                               method route-meta)
-
-                              #_{:tags nil
-                                 :summary nil
-                                 :description nil
-                                 :parameters nil
-                                 :responses nil
-                                 :produces nil
-                                 :consumes nil
-                                 :deprecated nil}))))]
-    (println "PATHS:")
-    (prn paths)
-    paths))
+  (comidi/walk-route-tree
+   routes {}
+   (fn [acc route-node route-info method route-handler]
+     (let [route-meta (meta route-node)]
+       (assoc acc (str/join (:path route-info))
+                  (route-meta->swagger-path
+                   method route-meta))))))

@@ -83,7 +83,7 @@
   (str "/" s "/"))
 
 (schema/defn ^:always-validate
-path-element->route-id-element :- schema/Str
+  path-element->route-id-element :- schema/Str
   "Given a String path element from comidi route metadata, convert it into a string
   suitable for use in building a route id string."
   [path-element :- schema/Str]
@@ -95,7 +95,7 @@ path-element->route-id-element :- schema/Str
       remove-leading-and-trailing-underscores))
 
 (schema/defn ^:always-validate
-regex-path-element->route-id-element :- schema/Str
+  regex-path-element->route-id-element :- schema/Str
   "Given a Regex path element from comidi route metadata, convert it into a string
   suitable for use in building a route id string."
   [path-element :- RegexPatternSegment]
@@ -106,7 +106,7 @@ regex-path-element->route-id-element :- schema/Str
       add-regex-symbols))
 
 (schema/defn ^:always-validate
-route-path-element->route-id-element :- schema/Str
+  route-path-element->route-id-element :- schema/Str
   "Given a route path element from comidi route metadata, convert it into a string
   suitable for use in building a route id string.  This function is mostly
   responsible for determining the type of the path element and dispatching to
@@ -126,7 +126,7 @@ route-path-element->route-id-element :- schema/Str
     (throw (IllegalStateException. (str "Unrecognized path element: " path-element)))))
 
 (schema/defn ^:always-validate
-route-path->route-id :- schema/Str
+  route-path->route-id :- schema/Str
   "Given a route path (from comidi route-metadata), build a route-id string for
   the route.  This route-id can be used as a unique identifier for a route."
   [route-path :- [bidi-schema/PatternSegment]]
@@ -136,7 +136,7 @@ route-path->route-id :- schema/Str
        (str/join "-")))
 
 (schema/defn ^:always-validate
-add-route-name :- RouteInfoWithId
+  add-route-name :- RouteInfoWithId
   "Given a RouteInfo, compute a route-id and return a RouteInfoWithId."
   [route-info :- RouteInfo]
   (assoc route-info :route-id (route-path->route-id (:path route-info))))
@@ -148,7 +148,7 @@ add-route-name :- RouteInfoWithId
   #{:any :get :post :put :delete :head :options})
 
 (schema/defn ^:always-validate
-update-route-info* :- RouteInfo
+  update-route-info* :- RouteInfo
   "Helper function, used to maintain a RouteInfo data structure that represents
   the current path elements of a route as we traverse the Bidi route tree via
   zipper."
@@ -177,39 +177,10 @@ update-route-info* :- RouteInfo
     :else
     (update-in route-info [:path] conj pattern)))
 
-#_(declare breadth-route-metadata*)
-
-#_(schema/defn ^:always-validate
-depth-route-metadata* :- RouteMetadata
-    "Helper function used to traverse branches of the Bidi route tree, depth-first."
-    [route-meta :- RouteMetadata
-     route-info :- RouteInfo
-     loc :- Zipper]
-    (let [[pattern matched] (zip/node loc)]
-      (cond
-        (map? matched)
-        (depth-route-metadata*
-         route-meta
-         route-info
-         (-> loc zip/down zip/right (zip/edit #(into [] %)) zip/up))
-
-        (vector? matched)
-        (breadth-route-metadata*
-         route-meta
-         (update-route-info* route-info pattern)
-         (-> loc zip/down zip/right zip/down))
-
-        :else
-        (let [route-info (-> (update-route-info* route-info pattern)
-                             add-route-name)]
-          (-> route-meta
-              (update-in [:routes] conj route-info)
-              (assoc-in [:handlers matched] route-info))))))
-
 (declare walk-routes-breadth*)
 
 (schema/defn ^:always-validate
-walk-routes-depth*
+  walk-routes-depth*
   "Helper function used to traverse branches of the Bidi route tree, depth-first."
   [acc
    visitor-fn :- IFn
@@ -218,10 +189,6 @@ walk-routes-depth*
   (let [[pattern matched] (zip/node loc)]
     (cond
       (map? matched)
-      #_(depth-route-metadata*
-         route-meta
-         route-info
-         (-> loc zip/down zip/right (zip/edit #(into [] %)) zip/up))
       (walk-routes-depth*
        acc
        visitor-fn
@@ -229,10 +196,6 @@ walk-routes-depth*
        (-> loc zip/down zip/right (zip/edit #(into [] %)) zip/up))
 
       (vector? matched)
-      #_(breadth-route-metadata*
-         route-meta
-         (update-route-info* route-info pattern)
-         (-> loc zip/down zip/right zip/down))
       (walk-routes-breadth*
        acc
        visitor-fn
@@ -240,33 +203,11 @@ walk-routes-depth*
        (-> loc zip/down zip/right zip/down))
 
       :else
-      #_(let [route-info (-> (update-route-info* route-info pattern)
-                             add-route-name)]
-          (-> route-meta
-              (update-in [:routes] conj route-info)
-              (assoc-in [:handlers matched] route-info)))
-      (do
-        (println "CALLING VISITOR, NODE:" (zip/node loc))
-        (println "\tVISITOR UP:" (-> loc zip/up zip/up zip/node))
-        (println "\tVISITOR UP META:" (-> loc zip/up zip/up zip/node meta))
-        (let [route-node (-> loc zip/up zip/up zip/node)]
-          (visitor-fn acc route-node route-info pattern matched))))))
-
-#_(schema/defn ^:always-validate
-breadth-route-metadata* :- RouteMetadata
-    "Helper function used to traverse branches of the Bidi route tree, breadth-first."
-    [route-meta :- RouteMetadata
-     route-info :- RouteInfo
-     loc :- Zipper]
-    (loop [route-meta route-meta
-           loc    loc]
-      (let [routes (depth-route-metadata* route-meta route-info loc)]
-        (if-let [next (zip/right loc)]
-          (recur routes next)
-          routes))))
+      (let [route-node (-> loc zip/up zip/up zip/node)]
+        (visitor-fn acc route-node route-info pattern matched)))))
 
 (schema/defn ^:always-validate
-walk-routes-breadth*
+  walk-routes-breadth*
   "Helper function used to traverse branches of the Bidi route tree, breadth-first."
   [acc
    visitor-fn :- IFn
@@ -281,7 +222,7 @@ walk-routes-breadth*
         routes))))
 
 (schema/defn ^:always-validate
-walk-route-tree
+  walk-route-tree
   "TODO"
   [routes :- bidi-schema/RoutePair
    acc
@@ -289,7 +230,6 @@ walk-route-tree
   (let [route-info {:path           []
                     :request-method :any}
         loc (-> [routes] zip/vector-zip zip/down)]
-    #_(breadth-route-metadata* acc route-info loc)
     (walk-routes-breadth* acc visitor-fn route-info loc)))
 
 (schema/defn ^:always-validate
@@ -298,11 +238,6 @@ route-metadata* :- RouteMetadata
   of RouteInfo objects (one per route), plus a mechanism to look up the
   RouteInfo for a given handler."
   [routes :- bidi-schema/RoutePair]
-  #_(let [route-info {:path           []
-                      :request-method :any}
-          loc (-> [routes] zip/vector-zip zip/down)]
-      (breadth-route-metadata* {:routes   []
-                                :handlers {}} route-info loc))
   (let [visitor-fn (fn [route-meta route-node route-info method route-handler]
                      (let [route-info (-> (update-route-info* route-info method)
                                           add-route-name)]
@@ -395,7 +330,7 @@ route-metadata* :- RouteMetadata
 ;;;; Public - core functions
 
 (schema/defn ^:always-validate
-route-metadata :- RouteMetadata
+  route-metadata :- RouteMetadata
   "Build up a map of metadata describing the routes.  This metadata map can be
   used for introspecting the routes after building the handler, and can also
   be used with the `wrap-with-route-metadata` middleware."
@@ -403,7 +338,7 @@ route-metadata :- RouteMetadata
   (memoized-route-metadata* routes))
 
 (schema/defn ^:always-validate
-wrap-with-route-metadata :- (schema/pred fn?)
+  wrap-with-route-metadata :- (schema/pred fn?)
   "Ring middleware; adds the comidi route-metadata to the request map, as well
   as a :route-info key that can be used to determine which route a given request
   matches."
@@ -422,7 +357,7 @@ wrap-with-route-metadata :- (schema/pred fn?)
                :match-context match-context))))))
 
 (schema/defn ^:always-validate
-wrap-routes :- bidi-schema/RoutePair
+  wrap-routes :- bidi-schema/RoutePair
   "Wraps middleware around the handlers at every leaf in the route in a manner
   analagous to compojure's wrap-routes function"
   [routes :- bidi-schema/RoutePair
@@ -433,7 +368,7 @@ wrap-routes :- bidi-schema/RoutePair
       zip/root))
 
 (schema/defn ^:always-validate
-routes :- bidi-schema/RoutePair
+  routes :- bidi-schema/RoutePair
   "Combines multiple bidi routes into a single data structure; this is largely
   just a convenience function for grouping several routes together as a single
   object that can be passed around."
@@ -441,7 +376,7 @@ routes :- bidi-schema/RoutePair
   ["" (vec routes)])
 
 (schema/defn ^:always-validate
-context :- bidi-schema/RoutePair
+  context :- bidi-schema/RoutePair
   "Combines multiple bidi routes together into a single data structure, but nests
   them all under the given url-prefix.  This is similar to compojure's `context`
   macro, but does not accept a binding form.  You can still destructure variables
@@ -452,7 +387,7 @@ context :- bidi-schema/RoutePair
   [url-prefix (vec routes)])
 
 (schema/defn ^:always-validate
-routes->handler :- (schema/pred fn?)
+  routes->handler :- (schema/pred fn?)
   "Given a bidi route tree, converts into a ring request handler function"
   [routes :- bidi-schema/RoutePair]
   (let [compiled-routes (bidi/compile-route routes)]
