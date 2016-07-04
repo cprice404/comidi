@@ -215,8 +215,7 @@
    loc :- Zipper]
   (loop [acc acc
          loc loc]
-    (let [routes #_(depth-route-metadata* acc route-info loc)
-          (walk-routes-depth* acc visitor-fn route-info loc)]
+    (let [routes (walk-routes-depth* acc visitor-fn route-info loc)]
       (if-let [next (zip/right loc)]
         (recur routes next)
         routes))))
@@ -322,7 +321,9 @@ route-metadata* :- RouteMetadata
                 loc
                 (let [[pattern matched] (zip/node loc)]
                   (if (fn? matched)
-                    (zip/replace loc [pattern (middleware matched)])
+                    (zip/replace loc [pattern (with-meta
+                                               (middleware matched)
+                                               (meta matched))])
                     loc)))]
       (recur (zip/next loc) middleware))))
 
@@ -385,6 +386,14 @@ route-metadata* :- RouteMetadata
   [url-prefix :- bidi-schema/Pattern
    & routes :- [bidi-schema/RoutePair]]
   [url-prefix (vec routes)])
+
+(schema/defn ^:always-validate
+  find-handler :- (schema/pred fn?)
+  "TODO:"
+  [routes :- bidi-schema/RoutePair
+   path :- schema/Str
+   request-method :- RequestMethod]
+  (:handler (bidi/match-route routes path :request-method request-method)))
 
 (schema/defn ^:always-validate
   routes->handler :- (schema/pred fn?)

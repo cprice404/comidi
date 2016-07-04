@@ -4,18 +4,17 @@
             [compojure.core :as compojure]
             [clojure.string :as str]))
 
-
 (def #^{:doc "TODO"}
   routes->handler #'comidi/routes->handler)
 
 (def #^{:doc "TODO"}
   context #'comidi/context)
 
-(defn qp-binding [req sym]
+(defn- qp-binding [req sym]
   `(get-in ~req [:query-params ~(keyword sym)]
            (get-in ~req [:query-params ~(name sym)])))
 
-(defn get-qp-req-bindings
+(defn- get-qp-req-bindings
   [route-meta req]
   (mapcat (fn [kw]
             (let [sym (symbol (name kw))]
@@ -40,11 +39,13 @@
       (let-request [~specs request#] ~@body)
       request#)))
 
-(defn route-with-method*
+(defn- route-with-method*
   "Helper function, used by the compojure-like macros (GET/POST/etc.) to generate
   a bidi route that includes a wrapped handler function."
   [method pattern specs body]
-  `(with-meta [~pattern {~method (handler-fn* ~specs ~body)}] ~specs))
+  `[~pattern {~method (with-meta
+                       (handler-fn* ~specs ~body)
+                       ~specs)}])
 
 (defmacro GET
   [pattern specs & body]
@@ -60,7 +61,7 @@
   (comidi/walk-route-tree
    routes {}
    (fn [acc route-node route-info method route-handler]
-     (let [route-meta (meta route-node)]
+     (let [route-meta (meta route-handler)]
        (assoc acc (str/join (:path route-info))
                   (route-meta->swagger-path
                    method route-meta))))))
