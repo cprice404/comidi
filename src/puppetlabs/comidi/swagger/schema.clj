@@ -11,22 +11,56 @@
   context #'comidi/context)
 
 (defn- qp-binding [req sym]
+  "TODO"
   `(get-in ~req [:query-params ~(keyword sym)]
            (get-in ~req [:query-params ~(name sym)])))
 
 (defn- get-qp-req-bindings
+  "TODO"
   [route-meta req]
   (mapcat (fn [kw]
             (let [sym (symbol (name kw))]
               [sym (qp-binding req sym)]))
           (:query-params route-meta)))
 
+;; TODO: DRY up
+
+(defn- fp-binding [req sym]
+  "TODO"
+  `(get-in ~req [:form-params ~(keyword sym)]
+           (get-in ~req [:form-params ~(name sym)])))
+
+(defn- get-fp-req-bindings
+  "TODO"
+  [route-meta req]
+  (mapcat (fn [kw]
+            (let [sym (symbol (name kw))]
+              [sym (fp-binding req sym)]))
+          (:form-params route-meta)))
+
+;; TODO: DRY up
+
+(defn- param-binding [req sym]
+  "TODO"
+  `(get-in ~req [:params ~(keyword sym)]
+           (get-in ~req [:params ~(name sym)])))
+
+(defn- get-param-req-bindings
+  "TODO"
+  [route-meta req]
+  (mapcat (fn [kw]
+            (let [sym (symbol (name kw))]
+              [sym (param-binding req sym)]))
+          (:params route-meta)))
+
 (defmacro let-request
   [[route-meta req] & body]
   ;; TODO: add support for other bindings besides query params
   ;; TODO: type coercion?
-  (let [req-bindings (get-qp-req-bindings route-meta req)]
-    #_(println "req bindings:" req-bindings)
+  (let [req-bindings (concat
+                      (get-qp-req-bindings route-meta req)
+                      (get-fp-req-bindings route-meta req)
+                      (get-param-req-bindings route-meta req))]
     `(let [~@req-bindings]
        ~@body)))
 
@@ -50,6 +84,14 @@
 (defmacro GET
   [pattern route-spec & body]
   (route-with-method* :get pattern route-spec body))
+
+(defmacro POST
+  [pattern route-spec & body]
+  (route-with-method* :post pattern route-spec body))
+
+(defmacro ANY
+  [pattern route-spec & body]
+  (route-with-method* :any pattern route-spec body))
 
 (defn route-meta->swagger-path
   [method route-meta]
