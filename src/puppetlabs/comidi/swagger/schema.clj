@@ -33,23 +33,23 @@
 (defmacro handler-fn*
   "Helper macro, used by the compojure-like macros (GET/POST/etc.) to generate
   a function that provides compojure's destructuring and rendering support."
-  [specs body]
+  [route-spec body]
   `(fn [request#]
      (compojure-response/render
-      (let-request [~specs request#] ~@body)
+      (let-request [~route-spec request#] ~@body)
       request#)))
 
 (defn- route-with-method*
   "Helper function, used by the compojure-like macros (GET/POST/etc.) to generate
   a bidi route that includes a wrapped handler function."
-  [method pattern specs body]
+  [method pattern route-spec body]
   `[~pattern {~method (with-meta
-                       (handler-fn* ~specs ~body)
-                       ~specs)}])
+                       (handler-fn* ~route-spec ~body)
+                       ~route-spec)}])
 
 (defmacro GET
-  [pattern specs & body]
-  (route-with-method* :get pattern specs body))
+  [pattern route-spec & body]
+  (route-with-method* :get pattern route-spec body))
 
 (defn route-meta->swagger-path
   [method route-meta]
