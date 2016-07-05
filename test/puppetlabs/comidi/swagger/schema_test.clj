@@ -49,6 +49,8 @@
   (testing "summary/description are passed through metadata"
     (is (true? false)))
   (testing "support schemas / possibly coercion on params"
+    (is (true? false)))
+  (testing "support params in URL path segments"
     (is (true? false))))
 
 (deftest swagger-metadata-test
@@ -98,14 +100,19 @@
 
 (deftest swagger-paths-tests
   (testing "swagger paths returns paths, with `:any` converted to `:post`")
-  (is (= {"/foo/divide" {:post {:responses {200 {:description ""
-                                                :schema schema/Int}}}}
+  (is (= {"/foo/plus" {:get {:summary "Foo: Sum"
+                             :description "x+y with query parameters"
+                             :tags ["foo"]
+                             :parameters {:query {:x nil
+                                                  :y nil}}
+                             :responses {200 {:description ""
+                                              :schema schema/Int}}}}
           "/foo/minus" {:post {:responses {200 {:description ""
                                                 :schema schema/Int}}}}
           "/foo/multiply" {:post {:responses {200 {:description ""
                                                    :schema schema/Int}}}}
-          "/foo/plus" {:get {:responses {200 {:description ""
-                                              :schema schema/Int}}}}}
+          "/foo/divide" {:post {:responses {200 {:description ""
+                                                :schema schema/Int}}}}}
          (comidi-schema/swagger-paths testutils/foo-routes))))
 
 (deftest register-schema-paths-test
