@@ -58,12 +58,14 @@
                       "/foo/plus"
                       :get)
           plus-route-meta (meta plus-route)]
-      (is (= #{:return :query-params :summary}
+      (is (= #{:return :query-params :summary :description :tags}
              (set (keys plus-route-meta))))
-      (is (= "x+y with query parameters" (:summary plus-route-meta)))
-      (is (= [:foo-handler/x :foo-handler/y]
+      (is (= "Foo: Sum" (:summary plus-route-meta)))
+      (is (= ['x 'y]
              (:query-params plus-route-meta)))
-      (is (= schema/Int (:return plus-route-meta)))))
+      (is (= schema/Int (:return plus-route-meta)))
+      (is (= "x+y with query parameters" (:description plus-route-meta)))
+      (is (= ["foo"] (:tags plus-route-meta)))))
 
   (testing "with wrapped routes"
     (let [wrapped-routes (comidi/wrap-routes
@@ -84,12 +86,15 @@
                           "/foo/plus"
                           :get)
               plus-route-meta (meta plus-route)]
-          (is (= #{:return :query-params :summary}
+
+          (is (= #{:return :query-params :summary :description :tags}
                  (set (keys plus-route-meta))))
-          (is (= "x+y with query parameters" (:summary plus-route-meta)))
-          (is (= [:foo-handler/x :foo-handler/y]
+          (is (= "Foo: Sum" (:summary plus-route-meta)))
+          (is (= ['x 'y]
                  (:query-params plus-route-meta)))
-          (is (= schema/Int (:return plus-route-meta))))))))
+          (is (= schema/Int (:return plus-route-meta)))
+          (is (= "x+y with query parameters" (:description plus-route-meta)))
+          (is (= ["foo"] (:tags plus-route-meta))))))))
 
 (deftest swagger-paths-tests
   (testing "swagger paths returns paths, with `:any` converted to `:post`")

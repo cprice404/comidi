@@ -18,9 +18,8 @@
 (defn- get-qp-req-bindings
   "TODO"
   [route-meta req]
-  (mapcat (fn [kw]
-            (let [sym (symbol (name kw))]
-              [sym (qp-binding req sym)]))
+  (mapcat (fn [sym]
+            [sym (qp-binding req sym)])
           (:query-params route-meta)))
 
 ;; TODO: DRY up
@@ -33,9 +32,8 @@
 (defn- get-fp-req-bindings
   "TODO"
   [route-meta req]
-  (mapcat (fn [kw]
-            (let [sym (symbol (name kw))]
-              [sym (fp-binding req sym)]))
+  (mapcat (fn [sym]
+            [sym (fp-binding req sym)])
           (:form-params route-meta)))
 
 ;; TODO: DRY up
@@ -48,9 +46,8 @@
 (defn- get-param-req-bindings
   "TODO"
   [route-meta req]
-  (mapcat (fn [kw]
-            (let [sym (symbol (name kw))]
-              [sym (param-binding req sym)]))
+  (mapcat (fn [sym]
+            [sym (param-binding req sym)])
           (:params route-meta)))
 
 (defmacro let-request
@@ -73,13 +70,26 @@
       (let-request [~route-spec request#] ~@body)
       request#)))
 
+(defn- params->meta*
+  [params]
+  (mapv (fn [sym] `(quote ~sym)) params))
+
+(defn- route-spec->meta*
+  [route-spec]
+  ;; TODO: DRY up
+  (-> route-spec
+      (#(if (:params %) (assoc % :params (params->meta* (:params %))) %))
+      (#(if (:form-params %) (assoc % :form-params (params->meta* (:form-params %))) %))
+      (#(if (:query-params %) (assoc % :query-params (params->meta* (:query-params %))) %))))
+
 (defn- route-with-method*
   "Helper function, used by the compojure-like macros (GET/POST/etc.) to generate
   a bidi route that includes a wrapped handler function."
   [method pattern route-spec body]
-  `[~pattern {~method (with-meta
-                       (handler-fn* ~route-spec ~body)
-                       ~route-spec)}])
+  (let [route-spec-meta (route-spec->meta* route-spec)]
+    `[~pattern {~method (with-meta
+                         (handler-fn* ~route-spec ~body)
+                         ~route-spec-meta)}]))
 
 (defmacro GET
   [pattern route-spec & body]
@@ -91,9 +101,10 @@
 
 (defmacro ANY
   [pattern route-spec & body]
-  `[~pattern (with-meta
-              (handler-fn* ~route-spec ~body)
-              ~route-spec)])
+  (let [route-spec-meta (route-spec->meta* route-spec)]
+    `[~pattern (with-meta
+                (handler-fn* ~route-spec ~body)
+                ~route-spec-meta)]))
 
 (defn route-meta->swagger-path
   [method route-meta]
