@@ -46,9 +46,9 @@
              (:body (testutils/foo-handler req)))))))
 
 (deftest tests-to-write
-  (testing "GET RID OF KEYWORD NAMESPACES IN ROUTE DESCS"
-    (is (true? false)))
   (testing "summary/description are passed through metadata"
+    (is (true? false)))
+  (testing "support schemas / possibly coercion on params"
     (is (true? false))))
 
 (deftest swagger-metadata-test

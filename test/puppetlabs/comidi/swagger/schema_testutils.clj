@@ -7,25 +7,25 @@
   (comidi-schema/context "/foo"
     (comidi-schema/GET "/plus"
       {:return schema/Int
-       :query-params [:foo-handler/x :foo-handler/y]
+       :query-params [x y]
        :summary "x+y with query parameters"}
       {:body (str (+ (Integer/parseInt x)
                      (Integer/parseInt y)))})
     (comidi-schema/POST "/minus"
       {:return schema/Int
-       :form-params [:foo-handler/x :foo-handler/y]
+       :form-params [x y]
        :summary "x-y with form parameters"}
       {:body (str (- (Integer/parseInt x)
                      (Integer/parseInt y)))})
     (comidi-schema/POST "/multiply"
       {:return schema/Int
-       :params [:foo-handler/x :foo-handler/y]
+       :params [x y]
        :summary "x*y with any parameters"}
       {:body (str (* (Integer/parseInt x)
                      (Integer/parseInt y)))})
     (comidi-schema/ANY "/divide"
       {:return schema/Int
-       :params [:foo-handler/x :foo-handler/y]
+       :params [x y]
        :summary "x/y with any parameters"}
       {:body (str (/ (Integer/parseInt x)
                      (Integer/parseInt y)))})))
