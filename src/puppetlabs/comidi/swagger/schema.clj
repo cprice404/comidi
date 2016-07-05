@@ -91,19 +91,24 @@
 
 (defmacro ANY
   [pattern route-spec & body]
-  (route-with-method* :any pattern route-spec body))
+  `[~pattern (with-meta
+              (handler-fn* ~route-spec ~body)
+              ~route-spec)])
 
 (defn route-meta->swagger-path
   [method route-meta]
-  {method {:responses {200 {:schema (:return route-meta)
-                            :description ""}}}})
+  ;; We need to convert `:any` to something else, because swagger does not
+  ;;  support it.  Might be more correct to iterate over all of the http methods.
+  (let [method (if (= :any method) :post method)]
+    {method {:responses {200 {:schema (:return route-meta)
+                              :description ""}}}}))
 
 (defn swagger-paths
   [routes]
   (comidi/walk-route-tree
    routes {}
-   (fn [acc route-node route-info method route-handler]
+   (fn [acc route-node route-info pattern route-handler]
      (let [route-meta (meta route-handler)]
        (assoc acc (str/join (:path route-info))
                   (route-meta->swagger-path
-                   method route-meta))))))
+                   pattern route-meta))))))

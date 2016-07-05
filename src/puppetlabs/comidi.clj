@@ -180,6 +180,19 @@
 (declare walk-routes-breadth*)
 
 (schema/defn ^:always-validate
+  visit-map*
+  [visitor-fn :- IFn
+   acc
+   route-node
+   route-info :- RouteInfo
+   m :- {RequestMethod IFn}]
+  (reduce
+   (fn [acc [request-method route-handler]]
+     (visitor-fn acc route-node route-info request-method route-handler))
+   acc
+   m))
+
+(schema/defn ^:always-validate
   walk-routes-depth*
   "Helper function used to traverse branches of the Bidi route tree, depth-first."
   [acc
@@ -189,11 +202,10 @@
   (let [[pattern matched] (zip/node loc)]
     (cond
       (map? matched)
-      (walk-routes-depth*
-       acc
-       visitor-fn
-       route-info
-       (-> loc zip/down zip/right (zip/edit #(into [] %)) zip/up))
+      (let [route-node (zip/node loc)]
+        (visit-map* visitor-fn acc route-node
+                    (update-route-info* route-info pattern)
+                    matched))
 
       (vector? matched)
       (walk-routes-breadth*
@@ -204,7 +216,9 @@
 
       :else
       (let [route-node (-> loc zip/up zip/up zip/node)]
-        (visitor-fn acc route-node route-info pattern matched)))))
+        (visitor-fn acc route-node
+                    (update-route-info* route-info pattern)
+                    :any matched)))))
 
 (schema/defn ^:always-validate
   walk-routes-breadth*
@@ -226,19 +240,21 @@
   [routes :- bidi-schema/RoutePair
    acc
    visitor-fn :- IFn]
+  ; TODO: make public?
   (let [route-info {:path           []
                     :request-method :any}
         loc (-> [routes] zip/vector-zip zip/down)]
     (walk-routes-breadth* acc visitor-fn route-info loc)))
 
 (schema/defn ^:always-validate
-route-metadata* :- RouteMetadata
+  route-metadata* :- RouteMetadata
   "Traverses a Bidi route tree and returns route metadata, which includes a list
   of RouteInfo objects (one per route), plus a mechanism to look up the
   RouteInfo for a given handler."
   [routes :- bidi-schema/RoutePair]
-  (let [visitor-fn (fn [route-meta route-node route-info method route-handler]
-                     (let [route-info (-> (update-route-info* route-info method)
+  (let [visitor-fn (fn [route-meta route-node route-info request-method route-handler]
+                     (let [route-info (-> route-info
+                                          (assoc :request-method request-method)
                                           add-route-name)]
                        (-> route-meta
                            (update-in [:routes] conj route-info)

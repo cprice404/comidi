@@ -154,25 +154,27 @@
               :bar "there"}
              (handler {:uri "/foo/hi/bar/there"}))))))
 
+(def compojure-style-routes
+  (context ["/foo/" :foo]
+    (ANY ["/any/" :x] [foo x]
+         (str "foo: " foo " any: " x))
+    (GET ["/get/" :x] [foo x]
+         (fn [req] {:foo foo
+                    :get x}))
+    (HEAD ["/head/" :x] [foo x]
+          {:foo foo
+           :head x})
+    (PUT "/put" [foo]
+         {:status 500
+          :body foo})
+    (POST ["/post/" :x] [x]
+          x)
+    (DELETE ["/delete/" :x] [foo x]
+            (atom {:foo foo
+                   :delete x}))))
+
 (deftest compojure-macros-test
-  (let [routes (context ["/foo/" :foo]
-                        (ANY ["/any/" :any] [foo any]
-                             (str "foo: " foo " any: " any))
-                        (GET ["/get/" :get] [foo get]
-                             (fn [req] {:foo foo
-                                        :get get}))
-                        (HEAD ["/head/" :head] [foo head]
-                              {:foo foo
-                               :head head})
-                        (PUT "/put" [foo]
-                             {:status 500
-                              :body foo})
-                        (POST ["/post/" :post] [post]
-                              post)
-                        (DELETE ["/delete/" :delete] [foo delete]
-                                (atom {:foo foo
-                                       :delete delete})))
-        handler (routes->handler routes)]
+  (let [handler (routes->handler compojure-style-routes)]
     (is (nil? (handler {:uri "/foo/hi/get/there" :request-method :post})))
     (is (nil? (handler {:uri "/foo/hi/head/there" :request-method :get})))
     (is (nil? (handler {:uri "/foo/hi/put" :request-method :get})))
@@ -206,6 +208,28 @@
            (select-keys
              (handler {:uri "/foo/hi/delete/there" :request-method :delete})
              [:status :foo :delete])))))
+
+(deftest walk-routes-test
+  (testing "walk routes visits each route"
+    (let [results (walk-route-tree compojure-style-routes
+                    []
+                    (fn [acc route-node route-info request-method route-handler]
+                      (conj acc
+                            {:path (:path route-info)
+                             :request-method request-method})))]
+      (is (= [{:path ["/foo/" :foo "/any/" :x]
+               :request-method :any}
+              {:path ["/foo/" :foo "/get/" :x]
+               :request-method :get}
+              {:path ["/foo/" :foo "/head/" :x]
+               :request-method :head}
+              {:path ["/foo/" :foo "/put"]
+               :request-method :put}
+              {:path ["/foo/" :foo "/post/" :x]
+               :request-method :post}
+              {:path ["/foo/" :foo "/delete/" :x]
+               :request-method :delete}]
+             results)))))
 
 (deftest not-found-test
   (testing "root not-found handler"

@@ -34,10 +34,19 @@
       (is (= "8"
              (:body (testutils/foo-handler req)))))))
 
+(deftest any-test
+  (testing "form param args work on generic params ANY route"
+    (let [req (mock/request :post "/foo/divide"
+                            {:x 4 :y 2})]
+      (is (= "2"
+             (:body (testutils/foo-handler req))))))
+  (testing "query param args work on generic params ANY route"
+    (let [req (mock/request :get "/foo/divide?x=4&y=2")]
+      (is (= "2"
+             (:body (testutils/foo-handler req)))))))
+
 (deftest tests-to-write
   (testing "GET RID OF KEYWORD NAMESPACES IN ROUTE DESCS"
-    (is (true? false)))
-  (testing "works with ANY route"
     (is (true? false)))
   (testing "summary/description are passed through metadata"
     (is (true? false))))
@@ -82,6 +91,18 @@
                  (:query-params plus-route-meta)))
           (is (= schema/Int (:return plus-route-meta))))))))
 
+(deftest swagger-paths-tests
+  (testing "swagger paths returns paths, with `:any` converted to `:post`")
+  (is (= {"/foo/divide" {:post {:responses {200 {:description ""
+                                                :schema schema/Int}}}}
+          "/foo/minus" {:post {:responses {200 {:description ""
+                                                :schema schema/Int}}}}
+          "/foo/multiply" {:post {:responses {200 {:description ""
+                                                   :schema schema/Int}}}}
+          "/foo/plus" {:get {:responses {200 {:description ""
+                                              :schema schema/Int}}}}}
+         (comidi-schema/swagger-paths testutils/foo-routes))))
+
 (deftest register-schema-paths-test
   (testing "Can register paths based on route metadata"
     (is (= {"/foo/plus" {:get {:responses {200 {:description ""
@@ -90,7 +111,8 @@
                                                   :schema schema/Int}}}}
             "/foo/multiply" {:post {:responses {200 {:description ""
                                                      :schema schema/Int}}}}
-            }
+            "/foo/divide" {:post {:responses {200 {:description ""
+                                                   :schema schema/Int}}}}}
            (swagger-ui-core/register-schema-paths
             (atom {})
             (comidi-schema/swagger-paths

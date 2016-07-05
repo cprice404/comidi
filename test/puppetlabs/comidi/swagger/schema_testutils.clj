@@ -22,6 +22,12 @@
        :params [:foo-handler/x :foo-handler/y]
        :summary "x*y with any parameters"}
       {:body (str (* (Integer/parseInt x)
+                     (Integer/parseInt y)))})
+    (comidi-schema/ANY "/divide"
+      {:return schema/Int
+       :params [:foo-handler/x :foo-handler/y]
+       :summary "x/y with any parameters"}
+      {:body (str (/ (Integer/parseInt x)
                      (Integer/parseInt y)))})))
 
 (def foo-handler
