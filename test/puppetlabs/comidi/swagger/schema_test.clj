@@ -8,6 +8,9 @@
             [puppetlabs.trapperkeeper.services.swagger-ui.swagger-ui-core :as swagger-ui-core]
             [ring.middleware.params :as params]))
 
+;(use-fixtures :once schema-test/validate-schemas)
+
+
 (deftest get-test
   (testing "query param args work on GET route"
     (let [req (mock/request :get "/foo/plus?x=4&y=2")]
@@ -105,14 +108,13 @@
                              :tags ["foo"]
                              :parameters {:query {:x nil
                                                   :y nil}}
-                             :responses {200 {:description ""
-                                              :schema schema/Int}}}}
-          "/foo/minus" {:post {:responses {200 {:description ""
-                                                :schema schema/Int}}}}
-          "/foo/multiply" {:post {:responses {200 {:description ""
-                                                   :schema schema/Int}}}}
-          "/foo/divide" {:post {:responses {200 {:description ""
-                                                :schema schema/Int}}}}}
+                             :responses {200 {:schema schema/Int}}}}
+          "/foo/minus" {:post {:description "x-y with form parameters"
+                               :responses {200 {:schema schema/Int}}}}
+          "/foo/multiply" {:post {:description "x*y with any parameters"
+                                  :responses {200 {:schema schema/Int}}}}
+          "/foo/divide" {:post {:description "x/y with any parameters"
+                                :responses {200 {:schema schema/Int}}}}}
          (comidi-schema/swagger-paths testutils/foo-routes))))
 
 (deftest register-schema-paths-test

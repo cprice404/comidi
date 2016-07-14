@@ -1,14 +1,26 @@
 (ns puppetlabs.comidi.swagger.schema
   (:require [puppetlabs.comidi :as comidi]
             [compojure.response :as compojure-response]
-            [compojure.core :as compojure]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [schema.core :as schema]
+            [ring.swagger.swagger2-full-schema :as swagger2-schema]
+            [bidi.schema :as bidi-schema])
+  (:import (schema.core Predicate)))
 
 (def #^{:doc "TODO"}
   routes->handler #'comidi/routes->handler)
 
 (def #^{:doc "TODO"}
   context #'comidi/context)
+
+(def RouteMetadata
+  {(schema/optional-key :query-params) [schema/Symbol]
+   (schema/optional-key :form-params) [schema/Symbol]
+   (schema/optional-key :params) [schema/Symbol]
+   (schema/optional-key :summary) schema/Str
+   (schema/optional-key :description) schema/Str
+   (schema/optional-key :tags) [schema/Str]
+   :return Predicate})
 
 (defn- qp-binding [req sym]
   "TODO"
@@ -76,6 +88,7 @@
 
 (defn- route-spec->meta*
   [route-spec]
+  (println "ROUTE SPEC:" route-spec)
   ;; TODO: DRY up
   (-> route-spec
       (#(if (:params %) (assoc % :params (params->meta* (:params %))) %))
@@ -106,16 +119,31 @@
                 (handler-fn* ~route-spec ~body)
                 ~route-spec-meta)]))
 
-(defn route-meta->swagger-path
-  [method route-meta]
+(schema/defn ^:always-validate
+  route-meta->swagger-path :- swagger2-schema/PathItem
+  [method :- comidi/RequestMethod
+   route-meta :- RouteMetadata]
   ;; We need to convert `:any` to something else, because swagger does not
-  ;;  support it.  Might be more correct to iterate over all of the http methods.
-  (let [method (if (= :any method) :post method)]
-    {method {:responses {200 {:schema (:return route-meta)
-                              :description ""}}}}))
+  ;;  support it.  Might be more correct to iterate over all of the http methods
+  ;;  and create an entry for each
+  (println "ROUTE META:" route-meta)
+  (let [method (if (= :any method) :post method)
+        rv
+        {method (-> {:description (:description route-meta)
+                     :responses {200 {:schema (:return route-meta)}}}
+                    ;; TODO clean up
+                    (#(if (:summary route-meta)
+                       (assoc % :summary (:summary route-meta))
+                       %))
+                    (#(if (:tags route-meta)
+                       (assoc % :tags (:tags route-meta))
+                       %)))}]
+    (println "RV:" rv)
+    rv))
 
-(defn swagger-paths
-  [routes]
+(schema/defn ^:always-validate
+  swagger-paths :- swagger2-schema/Paths
+  [routes :- bidi-schema/RoutePair]
   (comidi/walk-route-tree
    routes {}
    (fn [acc route-node route-info pattern route-handler]
